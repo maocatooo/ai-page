@@ -754,6 +754,7 @@ function switchConversation(id) {
   messages = conv ? conv.messages : [];
   renderConvBar();
   renderMessages();
+  scrollToBottom(); // 切换会话后定位到最新消息
 }
 
 function deleteConversation(id) {
@@ -776,6 +777,7 @@ function deleteConversation(id) {
   saveHistory();
   renderConvBar();
   renderMessages();
+  scrollToBottom(); // 删除会话后切到第一个会话，定位到最新消息
 }
 
 // 渲染会话标签栏
@@ -836,6 +838,8 @@ function escapeHtml(s) {
 const messagesEl = $('messages');
 
 function renderMessages() {
+  // 重渲染前记住滚动位置：删除/编辑消息后视图停留在原处，不再跳到底部
+  const savedScrollTop = messagesEl.scrollTop;
   messagesEl.innerHTML = '';
   if (messages.length === 0) {
     messagesEl.innerHTML = `
@@ -849,7 +853,7 @@ function renderMessages() {
   messages.forEach((msg, i) => {
     addMessageDom(msg.role, msg.content, i, i === messages.length - 1 && msg.role === 'assistant' && isGenerating);
   });
-  scrollToBottom();
+  messagesEl.scrollTop = savedScrollTop;
 }
 
 const ICON_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
@@ -1216,6 +1220,7 @@ messages = curConv().messages;  // 同步当前会话消息到全局变量
 renderModelList();
 renderConvBar();
 renderMessages();
+scrollToBottom(); // 页面加载后定位到最新消息
 updateModelTag();
 inputEl.focus();
 </script>
