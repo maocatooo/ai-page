@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // 部署后在 Dashboard 的 Workers & Pages 里显示的项目名
+  "name": "aipage",
+  "main": "worker.js",
+  "compatibility_date": "2025-06-01",
+  "assets": {
+    // 静态资源目录（聊天页面）
+    "directory": "./public",
+    "binding": "ASSETS",
+    // /proxy 一律先走 Worker，其余路径优先匹配静态资源
+    "run_worker_first": ["/proxy*"]
+  }
+}
