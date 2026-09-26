@@ -888,8 +888,15 @@ function addMessageDom(role, content, index, streaming) {
   return { bubble: div.querySelector('.bubble'), div };
 }
 
-function scrollToBottom() {
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+function scrollToBottom(smooth = true) {
+  // 流式跟随必须用瞬时滚动：smooth 动画是异步的，会覆盖用户上滑的滚轮操作
+  messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: smooth ? 'smooth' : 'instant' });
+}
+// 用户是否停留在消息列表底部。
+// 流式跟随的容差取 40px：小于一格滚轮（约100px），上滑一格即脱离跟随；
+// 又能容住两次内容增量之间底部的漂移，贴底后可稳定恢复跟随
+function isNearBottom(threshold = 40) {
+  return messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < threshold;
 }
 
 // ============ 发送消息 ============
@@ -975,9 +982,12 @@ async function streamAssistantReply(bubbleEl) {
             const json = JSON.parse(data);
             const delta = json.choices?.[0]?.delta?.content || '';
             if (delta) {
+              // 只在用户本来就停在底部时才跟随滚动：
+              // 上滑即脱离跟随；重新贴到底部（±40px 容差）后恢复
+              const stick = isNearBottom();
               assistantText += delta;
               bubbleEl.innerHTML = renderContent(assistantText);
-              scrollToBottom();
+              if (stick) scrollToBottom(false);
             }
           } catch(e) { /* 忽略解析错误 */ }
         }
@@ -1207,8 +1217,7 @@ $('backdrop').addEventListener('click', () => toggleSidebar(false));
 // 滚动按钮
 const scrollBtn = $('scrollBtn');
 messagesEl.addEventListener('scroll', () => {
-  const atBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 100;
-  scrollBtn.classList.toggle('show', !atBottom && messagesEl.scrollHeight > 600);
+  scrollBtn.classList.toggle('show', !isNearBottom(100) && messagesEl.scrollHeight > 600);
 });
 scrollBtn.addEventListener('click', scrollToBottom);
 
